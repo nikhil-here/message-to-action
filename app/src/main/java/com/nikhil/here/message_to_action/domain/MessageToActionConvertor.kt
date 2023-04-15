@@ -17,7 +17,7 @@ class MessageToActionConvertor @Inject constructor(
 ) {
 
     companion object {
-        private const val DEFAULT_MODEL = "text-davinci-003"
+        const val DEFAULT_MODEL = "text-davinci-003"
         private const val DEFAULT_TEMPERATURE = 0.9f
         private const val DEFAULT_MAX_TOKENS = 500
         private const val DEFAULT_TOP_P = 1f
@@ -31,17 +31,22 @@ class MessageToActionConvertor @Inject constructor(
 
     suspend fun convertMessageToAction(
         userQuery: String,
-        apiKey: String
-    ) : JSONObject {
-        val fetchDbOpnTypeEntity = fetchDbOpnType(userQuery = userQuery, apiKey = apiKey)
-        val fetchUserActionAndExtraParamsEntity =  fetchDbOpnTypeEntity?.let {
+        apiKey: String,
+        model : String
+    ): JSONObject {
+        val fetchDbOpnTypeEntity = fetchDbOpnType(userQuery = userQuery, apiKey = apiKey, model = model)
+        val fetchUserActionAndExtraParamsEntity = fetchDbOpnTypeEntity?.let {
             fetchUserActionAndExtraParams(
                 apiKey = apiKey,
                 userQuery = userQuery,
-                fetchDbOpnTypeEntity = fetchDbOpnTypeEntity
+                fetchDbOpnTypeEntity = fetchDbOpnTypeEntity,
+                model = model
             )
         }
-        Log.i(TAG, "convertMessageToAction: fetchDbOpnType $fetchDbOpnTypeEntity fetchUserAction $fetchUserActionAndExtraParamsEntity")
+        Log.i(
+            TAG,
+            "convertMessageToAction: fetchDbOpnType $fetchDbOpnTypeEntity fetchUserAction $fetchUserActionAndExtraParamsEntity"
+        )
         val messageToActionResponse = MessageToActionResponse(
             operationType = fetchDbOpnTypeEntity?.operationType ?: OperationType.UNKNOWN,
             extraParams = MessageToActionResponse.ExtraParams(
@@ -58,11 +63,15 @@ class MessageToActionConvertor @Inject constructor(
     }
 
 
-    private suspend fun fetchDbOpnType(userQuery: String, apiKey: String): FetchDbOpnTypeEntity? {
+    private suspend fun fetchDbOpnType(
+        userQuery: String,
+        apiKey: String,
+        model: String
+    ): FetchDbOpnTypeEntity? {
         return try {
             val response = chatGptService.complete(
                 completionRequestEntity = CompletionRequestEntity(
-                    model = DEFAULT_MODEL,
+                    model = model,
                     prompt = createPromptForFetchingDbOpn(userQuery = userQuery),
                     temperature = DEFAULT_TEMPERATURE,
                     maxTokens = DEFAULT_MAX_TOKENS,
@@ -126,14 +135,18 @@ class MessageToActionConvertor @Inject constructor(
     private suspend fun fetchUserActionAndExtraParams(
         apiKey: String,
         userQuery: String,
+        model: String,
         fetchDbOpnTypeEntity: FetchDbOpnTypeEntity
-    ) : FetchUserActionAndExtraParamsEntity? {
-        return when(fetchDbOpnTypeEntity.operationType) {
+    ): FetchUserActionAndExtraParamsEntity? {
+        return when (fetchDbOpnTypeEntity.operationType) {
             OperationType.READ -> {
                 val response = chatGptService.complete(
                     completionRequestEntity = CompletionRequestEntity(
-                        model = DEFAULT_MODEL,
-                        prompt = createPromptForFetchingUserAction(userQuery = userQuery, operationType = fetchDbOpnTypeEntity.operationType),
+                        model = model,
+                        prompt = createPromptForFetchingUserAction(
+                            userQuery = userQuery,
+                            operationType = fetchDbOpnTypeEntity.operationType
+                        ),
                         temperature = DEFAULT_TEMPERATURE,
                         maxTokens = DEFAULT_MAX_TOKENS,
                         topP = DEFAULT_TOP_P,
@@ -146,14 +159,19 @@ class MessageToActionConvertor @Inject constructor(
                     parseUserActionFromResponse(response = it, userQuery = userQuery)
                 }
             }
+
             else -> {
                 null
             }
         }
     }
 
-    private fun createPromptForFetchingUserAction(userQuery: String, operationType: OperationType): String {
-        val task = "we want to perform ${operationType.name} database operation based on the above user query, map the exact user action from the above user query and also follow following rules while giving response"
+    private fun createPromptForFetchingUserAction(
+        userQuery: String,
+        operationType: OperationType
+    ): String {
+        val task =
+            "we want to perform ${operationType.name} database operation based on the above user query, map the exact user action from the above user query and also follow following rules while giving response"
         val rules = listOf(
             "response should be in the form of JSON only. don't add any additional information or explanation in the response.",
             "response JSON should contain only following fields \"userAction\" and \"extraParams\".",

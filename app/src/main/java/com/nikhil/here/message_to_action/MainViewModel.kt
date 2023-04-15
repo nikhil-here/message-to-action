@@ -39,14 +39,15 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun onPrompt(userQuery : String) {
+    fun onPrompt(userQuery: String, model: String) {
         intent {
-            if (userQuery.isNotEmpty()) {
-                var apiKey = (state as? MainState.GetPrompt)?.apiKey.orEmpty()
+            if (userQuery.isNotEmpty() && model.isNotEmpty()) {
+                val apiKey = (state as? MainState.GetPrompt)?.apiKey.orEmpty()
                 updateIsLoading(true)
                 val response = messageToActionConvertor.convertMessageToAction(
                     userQuery = userQuery,
-                    apiKey = apiKey
+                    apiKey = apiKey,
+                    model = model
                 )
                 updateIsLoading(false)
                 reduce {
@@ -56,7 +57,7 @@ class MainViewModel @Inject constructor(
                 }
             } else {
                 postSideEffect(
-                    MainSideEffects.ShowToast("User Query is empty")
+                    MainSideEffects.ShowToast("User Query or Model cannot be empty")
                 )
             }
         }

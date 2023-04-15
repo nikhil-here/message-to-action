@@ -92,4 +92,6 @@ dependencies {
     releaseImplementation 'com.mocklets:pluto-no-op:1.1.3'
 
 
+    // coil
+    implementation("io.coil-kt:coil-compose:2.2.2")
 }

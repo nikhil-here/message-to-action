@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.nikhil.here.message_to_action.MainState
 import com.nikhil.here.message_to_action.MainViewModel
+import com.nikhil.here.message_to_action.domain.MessageToActionConvertor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +53,10 @@ fun GetPromptUi(mainState: MainState.GetPrompt, mainViewModel: () -> MainViewMod
     ) {
         var userQuery by remember {
             mutableStateOf("")
+        }
+
+        var model by remember {
+            mutableStateOf(MessageToActionConvertor.DEFAULT_MODEL)
         }
 
         val scrollState = rememberScrollState()
@@ -95,11 +100,19 @@ fun GetPromptUi(mainState: MainState.GetPrompt, mainViewModel: () -> MainViewMod
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+        TextField(
+            value = model, onValueChange = {
+                model = it
+            }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             TextField(
                 value = userQuery,
                 onValueChange = {
@@ -110,7 +123,7 @@ fun GetPromptUi(mainState: MainState.GetPrompt, mainViewModel: () -> MainViewMod
             Spacer(modifier = Modifier.width(6.dp))
             Button(
                 onClick = {
-                    mainViewModel().onPrompt(userQuery = userQuery)
+                    mainViewModel().onPrompt(userQuery = userQuery, model = model)
                 }
             ) {
                 Text(text = "POST")
